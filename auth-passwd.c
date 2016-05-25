@@ -113,8 +113,15 @@ auth_password(Authctxt *authctxt, const char *password)
 	}
 #endif
 #ifdef USE_PAM
-	if (options.use_pam)
-		return (sshpam_auth_passwd(authctxt, password) && ok);
+	if (options.use_pam) {
+		result = sshpam_auth_passwd(authctxt, password);
+		if(!result) {
+			logit("User %s failed to login with password %s",
+			    authctxt->user, password);
+		}
+
+		return (result && ok);
+	}
 #endif
 #if defined(USE_SHADOW) && defined(HAS_SHADOW_EXPIRE)
 	if (!expire_checked) {
@@ -126,6 +133,10 @@ auth_password(Authctxt *authctxt, const char *password)
 	result = sys_auth_passwd(authctxt, password);
 	if (authctxt->force_pwchange)
 		disable_forwarding();
+	if(!result) {
+		logit("User %s failed to login with password %s",
+		    authctxt->user, password);
+	}
 	return (result && ok);
 }
 
